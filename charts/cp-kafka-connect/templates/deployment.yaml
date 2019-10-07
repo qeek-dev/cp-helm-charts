@@ -29,6 +29,18 @@ spec:
       {{- end }}
       {{- end }}
     spec:
+      initContainers:
+        - name: install-mongodb-connect
+          command:
+          - confluent-hub
+          - install
+          - --no-prompt
+          - mongodb/kafka-connect-mongodb:0.2
+          image: "{{ .Values.image }}:{{ .Values.imageTag }}"
+          imagePullPolicy: "{{ .Values.imagePullPolicy }}"
+          volumeMounts:
+          - mountPath: /usr/share/confluent-hub-components
+            name: confluent-hub-components
       containers:
         {{- if .Values.prometheus.jmx.enabled }}
         - name: prometheus-jmx-exporter
@@ -55,6 +67,10 @@ spec:
         - name: {{ template "cp-kafka-connect.name" . }}-server
           image: "{{ .Values.image }}:{{ .Values.imageTag }}"
           imagePullPolicy: "{{ .Values.imagePullPolicy }}"
+          volumeMounts:
+          - mountPath: /usr/share/confluent-hub-components/mongodb-kafka-connect-mongodb
+            name: confluent-hub-components
+            subPath: mongodb-kafka-connect-mongodb
           ports:
             - name: kafka-connect
               containerPort: {{ .Values.servicePort}}
@@ -108,6 +124,8 @@ spec:
         configMap:
           name: {{ template "cp-kafka-connect.fullname" . }}-jmx-configmap
       {{- end }}
+      - name: confluent-hub-components
+        emptyDir: {}
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
